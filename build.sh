@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
-gcc -Werror -x c -o ./build/cws ./src/main.c
+gcc -Werror -x c -o ./build/ws ./src/main.c
 
 echo "-- Program Started --"
-./build/cws
+./build/ws
 echo "-- Program Ended --"

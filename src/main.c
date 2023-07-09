@@ -74,7 +74,7 @@ const char* mime_from_path(const char* filepath) {
 	else if(!strcmp(ext, "css"))
 		return "text/css";
 	else if(!strcmp(ext, "js"))
-		return "text/js";
+		return "text/javascript";
 	else if(!strcmp(ext, "mjs"))
 		return "application/javascript";
 
@@ -196,26 +196,26 @@ int http_send_res(int fd, http_res* res) {
 }
 
 
-void http_handle_request(int client) {
-	char* buf = calloc(1025, 1); // +1 for ending 0
+int http_handle_request(int client) {
+	char* buf = calloc(1024, 1);
 	int length;
 
-	if((length = recv(client, buf, 1024, 0)) == -1) {
+	if((length = recv(client, buf, 1023, 0)) == -1) {
 		perror("recv");
 		free(buf);
-		return;
+		return 1;
 	}
 	else if(length == 0) {
 		free(buf);
-		return; // EOF, no data to read
+		return 1; // EOF, no data to read
 	}
-	else if(length == 1024) {
+	else if(length == 1023) {
 		http_res response = http_create_res(413, "Content Too Large");
 		response.body = slice_from_str("Request too large");
 
 		http_send_res(client, &response);
 		free(buf);
-		return;
+		return 1;
 	}
 
 	http_req request = http_parse_req(buf);
@@ -272,12 +272,12 @@ void http_handle_request(int client) {
 
 		int size_digits = count_digits((int)file_stat.st_size);
 		const char* content_type = mime_from_path(filepath);
-		// "Content-Length: " + digits + "\r\nContent-Type: " type + "\r\n" + 0
-		int header_len = 33 + size_digits + strlen(content_type);
+		// "Content-Length: " + digits + "\r\nContent-Type: " type + "Connection: keep-alive" + 0
+		int header_len = 57 + size_digits + strlen(content_type);
 		char* header_str = malloc(header_len);
 
 		snprintf(header_str, header_len,
-				"Content-Length: %d\r\nContent-Type: %s",
+				"Content-Length: %d\r\nContent-Type: %s\r\nConnection: keep-alive",
 				(int)file_stat.st_size, content_type);
 		slice headers = { header_len - 1, header_str }; // -1, ending 0 doesn't get sent
 		response.headers = headers;
@@ -309,6 +309,7 @@ void http_handle_request(int client) {
 
 	free(filepath);
 	free(buf);
+	return 0;
 }
 
 
@@ -418,10 +419,10 @@ int main() {
 			// Client sent data
 			else {
 				int peer = event_buf[n].data.fd;
-				http_handle_request(peer);
+				int should_close = http_handle_request(peer);
 
 				// Closed connection
-				if(event_buf[n].events | EPOLLHUP) {
+				if(should_close) {
 					if(epoll_ctl(poller, EPOLL_CTL_DEL, peer, &ev) == -1) {
 						perror("epoll_ctl");
 						exit(1);

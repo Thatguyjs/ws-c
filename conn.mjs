@@ -17,4 +17,12 @@ const conn = net.connect(8080, "127.0.0.1", () => {
 		buf.copy(total, index);
 		index += buf.length;
 	});
+
+	conn.on('end', () => {
+		console.log("Disconnected :(");
+	});
+
+	setTimeout(() => {
+		conn.write("GET / HTTP/1.1\r\nAnother-Header: anothervalue\r\n\r\n");
+	}, 5 * 1000);
 });
