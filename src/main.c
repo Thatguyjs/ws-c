@@ -1,9 +1,9 @@
 #include "http.h"
+#include "priority.h"
 
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -71,6 +71,10 @@ int main() {
 	struct sockaddr_storage peer_addr;
 	socklen_t peer_addr_len;
 
+	// Client read timeouts
+	uint64_t prev_time = get_time_ms();
+	p_queue client_times = pq_new(client_limit);
+
 	// Register the listening socket with epoll
 	ev.events = EPOLLIN;
 	ev.data.fd = sk;
@@ -83,12 +87,30 @@ int main() {
 	// TODO: Use sigset_t and epoll_pwait() to handle signals as well
 
 	for(;;) {
-		int num_events = epoll_wait(poller, event_buf, 20, -1);
+		int timeout = client_times.length ? pq_peek(&client_times).timeout : -1;
+		int num_events = epoll_wait(poller, event_buf, 20, timeout);
 
 		if(num_events == -1) {
 			perror("epoll_wait");
 			exit(1);
 		}
+
+		// Timed out, close client
+		if(num_events == 0) {
+			p_item item = pq_pop(&client_times);
+
+			if(epoll_ctl(poller, EPOLL_CTL_DEL, item.fd, &ev) == -1) {
+				perror("epoll_ctl");
+				exit(1);
+			}
+
+			if(close(item.fd) == -1)
+				perror("close");
+		}
+
+		uint64_t curr_time = get_time_ms();
+		pq_subtract_time(&client_times, curr_time - prev_time);
+		prev_time = curr_time;
 
 		for(int n = 0; n < num_events; n++) {
 			// New connection
@@ -102,6 +124,7 @@ int main() {
 				}
 
 				set_nonblocking(peer, true);
+				pq_insert(&client_times, 5, peer);
 
 				ev.events = EPOLLIN;
 				ev.data.fd = peer;
@@ -117,8 +140,14 @@ int main() {
 				int peer = event_buf[n].data.fd;
 				int should_close = http_handle_request(peer);
 
+				// Update priority queue
+				if(!should_close)
+					pq_update(&client_times, 5, peer);
+
 				// Closed connection
-				if(should_close) {
+				else {
+					pq_remove_fd(&client_times, peer);
+
 					if(epoll_ctl(poller, EPOLL_CTL_DEL, peer, &ev) == -1) {
 						perror("epoll_ctl");
 						exit(1);
@@ -133,6 +162,7 @@ int main() {
 		}
 	}
 
+	// pq_free(&client_times);
 	// freeaddrinfo(hostinfo);
 	// close(poller);
 	// close(sk);

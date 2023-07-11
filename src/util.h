@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 typedef struct {
@@ -18,3 +19,5 @@ int set_nonblocking(int fd, bool active);
 int set_nodelay(int fd, bool active);
 
 int count_digits(int value);
+
+uint64_t get_time_ms();

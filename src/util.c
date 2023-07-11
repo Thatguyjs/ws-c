@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <string.h>
+#include <time.h>
 
 
 slice slice_new(size_t length, const char* data) {
@@ -57,4 +58,14 @@ int count_digits(int value) {
 	}
 
 	return digits;
+}
+
+
+uint64_t get_time_ms() {
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+	uint64_t result = ts.tv_sec * 1000;
+	result += ts.tv_nsec / 1e6;
+	return result;
 }
