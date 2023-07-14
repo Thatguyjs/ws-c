@@ -3,8 +3,16 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
+
+
+char upper(char ch) {
+	if(ch >= 'a' && ch <= 'z')
+		return ch + 'A' - 'a';
+	return ch;
+}
 
 
 slice slice_new(size_t length, const char* data) {
@@ -16,22 +24,54 @@ slice slice_from_data(const char* data) {
 	return slice_new(strlen(data), data);
 }
 
-slice slice_until_next(const slice* data, char ch) {
+slice slice_until_ch(const slice* data, char ch) {
 	size_t length = 0;
 
 	while(length < data->length && data->data[length] != ch)
 		length++;
 
+	if(data->data[length] != ch)
+		length = SIZE_MAX;
+
 	slice sl = { length, data->data };
 	return sl;
 }
 
-bool slice_move_by(slice* sl, size_t offset) {
+slice slice_line(const slice* data) {
+	size_t length = 0;
+
+	while(length < data->length && data->data[length] != '\n')
+		length++;
+
+	if(data->data[length] != '\n')
+		length = SIZE_MAX;
+
+	// Slice before the carriage return if present
+	else if(length > 0 && data->data[length - 1] == '\r')
+		length--;
+
+	slice sl = { length, data->data };
+	return sl;
+}
+
+bool slice_advance(slice* sl, size_t offset) {
 	if(offset >= sl->length)
 		return false;
 
 	sl->data += offset;
 	sl->length -= offset;
+	return true;
+}
+
+bool slice_eq_data(const slice* sl, const char* data, bool case_ins) {
+	for(size_t i = 0; i < sl->length; i++) {
+		char s_ch = upper(sl->data[i]);
+		char d_ch = upper(data[i]);
+
+		if(data[i] == '\0' || s_ch != d_ch)
+			return false;
+	}
+
 	return true;
 }
 
@@ -71,10 +111,10 @@ uint64_t get_time_ms() {
 }
 
 
-int rfind_char(const char* str, char ch, size_t length) {
-	for(int i = (int)length; i >= 0; i--)
-		if(str[i] == ch)
+size_t rfind_char(const char* str, char ch, size_t length) {
+	for(size_t i = length; i > 0; i--)
+		if(str[i - 1] == ch)
 			return i;
 
-	return -1;
+	return SIZE_MAX;
 }

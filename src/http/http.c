@@ -1,6 +1,9 @@
 #include "http.h"
+#include "path.h"
 
+#include <errno.h>
 #include <fcntl.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +11,22 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+
+const char* http_error_msg(int code) {
+	switch(code) {
+		case 0:
+			return "[no error]";
+		case HTTP_INV_REQ_LINE:
+			return "Invalid Request Line";
+		case HTTP_INV_METHOD:
+			return "Invalid Method";
+		case HTTP_INV_VERSION:
+			return "Invalid Version";
+		default:
+			return "Unknown Error";
+	}
+}
 
 
 const char* mime_from_path(const char* path) {
@@ -37,11 +56,12 @@ const char* mime_from_path(const char* path) {
 }
 
 
+/*
 http_req http_parse_req(const char *raw_data) {
 	http_req request;
 
 	slice data = slice_from_data(raw_data);
-	slice method = slice_until_next(&data, ' ');
+	slice method = slice_until_ch(&data, ' ');
 
 	if(strncmp(method.data, "GET", 3) == 0)
 		request.method = GET;
@@ -49,10 +69,10 @@ http_req http_parse_req(const char *raw_data) {
 		request.method = POST;
 
 	slice_move_by(&data, method.length + 1);
-	request.path = slice_until_next(&data, ' ');
+	request.path = slice_until_ch(&data, ' ');
 	slice_move_by(&data, request.path.length + 1);
 
-	slice version = slice_until_next(&data, '\r');
+	slice version = slice_until_ch(&data, '\r');
 
 	if(strncmp(version.data, "HTTP/1.0", 8) == 0)
 		request.version = HTTP1_0;
@@ -73,6 +93,7 @@ http_req http_parse_req(const char *raw_data) {
 
 	return request;
 }
+*/
 
 
 http_res http_create_res(int status_code, const char* status_msg) {
@@ -121,18 +142,18 @@ int http_send_res(int fd, http_res* res) {
 }
 
 
-int http_handle_request(int client) {
+bool http_handle_request(int client) {
 	char* buf = calloc(1024, 1);
 	int length;
 
 	if((length = recv(client, buf, 1023, 0)) == -1) {
 		perror("recv");
 		free(buf);
-		return 1;
+		return true;
 	}
 	else if(length == 0) {
 		free(buf);
-		return 1; // EOF, no data to read
+		return true; // EOF, no data to read
 	}
 	else if(length == 1023) {
 		http_res response = http_create_res(413, "Content Too Large");
@@ -140,53 +161,43 @@ int http_handle_request(int client) {
 
 		http_send_res(client, &response);
 		free(buf);
-		return 1;
+		return true;
 	}
 
-	http_req request = http_parse_req(buf);
+	http_req request = http_parse_request(buf, length);
 
-	// Create space for a corrected filepath
-	char* filepath;
-	size_t path_len = 1 + request.path.length;
-	int add_items = 0; // 0b1 = start '/', 0b10 = end '/', 0b100 = "index.html"
-
-	if(request.path.data[0] != '/') {
-		path_len++;
-		add_items |= 1;
-	}
-	if(!memchr(request.path.data, '.', request.path.length)) {
-		if(request.path.data[request.path.length - 1] != '/') {
-			path_len++;
-			add_items |= 2;
-		}
-
-		path_len += 10;
-		add_items |= 4;
+	if(request.error) {
+		http_free_request(&request);
+		return true;
 	}
 
-	filepath = malloc(path_len + 1); // +1 for ending 0
-	filepath[path_len] = 0;
+	fp_lpush(&request.path, "./tests/simple-site", 19);
+	slice filename = fp_file_name(&request.path);
 
-	// Construct the filepath
-	char* ptr = filepath;
-	ptr[0] = '.';
-	ptr++;
+	if(rfind_char(filename.data, '.', filename.length) == SIZE_MAX)
+		fp_push(&request.path, "index.html", 10);
 
-	if(add_items & 1) {
-		ptr[0] = '/';
-		ptr++;
+	int file = open(request.path.path, O_RDONLY);
+
+	if(file != -1) {
+		// TODO: Send 200 "Ok" response
+		close(file);
 	}
 
-	memcpy(ptr, request.path.data, request.path.length);
-	ptr += request.path.length;
-
-	if(add_items & 2) {
-		ptr[0] = '/';
-		ptr++;
+	// Not Found
+	else if(errno == ENOENT) {
+		// TODO: Send 404 "Not Found" response
 	}
-	if(add_items & 4)
-		memcpy(ptr, "index.html", 10);
 
+	// Other Error
+	else {
+		// TODO: Send 500 "Internal Server Error" response
+	}
+
+	http_free_request(&request);
+	return false;
+
+	/*
 	int file = open(filepath, O_RDONLY);
 
 	// Ok, no error
@@ -235,4 +246,5 @@ int http_handle_request(int client) {
 	free(filepath);
 	free(buf);
 	return 0;
+	*/
 }

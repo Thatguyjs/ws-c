@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-gcc -Werror -x c -o ./build/ws ./src/*.c
+gcc -Werror -x c -o ./build/ws ./src/*.c ./src/*/*.c
 
 echo "-- Program Started --"
 ./build/ws
