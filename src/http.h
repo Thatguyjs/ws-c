@@ -1,3 +1,5 @@
+#pragma once
+
 // Handle HTTP requests & responses
 
 #include "util.h"

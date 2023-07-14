@@ -1,3 +1,5 @@
+#pragma once
+
 // A simple priority queue implementation for adding read timeouts to sockets
 
 #include <stdint.h>
