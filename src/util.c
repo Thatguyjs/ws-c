@@ -69,3 +69,12 @@ uint64_t get_time_ms() {
 	result += ts.tv_nsec / 1e6;
 	return result;
 }
+
+
+int rfind_char(const char* str, char ch, size_t length) {
+	for(int i = (int)length; i >= 0; i--)
+		if(str[i] == ch)
+			return i;
+
+	return -1;
+}

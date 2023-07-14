@@ -2,11 +2,20 @@
 #include "priority.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netdb.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+
+
+volatile sig_atomic_t quit = 0;
+
+void quit_handle(int signo) {
+	quit = 1;
+}
 
 
 int main() {
@@ -86,11 +95,20 @@ int main() {
 
 	// TODO: Use sigset_t and epoll_pwait() to handle signals as well
 
-	for(;;) {
-		int timeout = client_times.length ? pq_peek(&client_times).timeout : -1;
-		int num_events = epoll_wait(poller, event_buf, 20, timeout);
+	// Handle Ctrl-C signal (SIGINT)
+	struct sigaction sa = { .sa_handler = quit_handle };
+	sigaction(SIGINT, &sa, NULL);
 
-		if(num_events == -1) {
+	sigset_t blocked;
+	sigemptyset(&blocked);
+	sigfillset(&blocked);
+	sigdelset(&blocked, SIGINT);
+
+	while(!quit) {
+		int timeout = client_times.length ? pq_peek(&client_times).timeout : -1;
+		int num_events = epoll_pwait(poller, event_buf, 20, timeout, &blocked);
+
+		if(num_events == -1 && errno != EINTR) {
 			perror("epoll_wait");
 			exit(1);
 		}
@@ -162,8 +180,13 @@ int main() {
 		}
 	}
 
-	// pq_free(&client_times);
-	// freeaddrinfo(hostinfo);
-	// close(poller);
-	// close(sk);
+	size_t num_times = client_times.length;
+
+	for(size_t i = 0; i < num_times; i++)
+		close(pq_pop(&client_times).fd);
+
+	pq_free(&client_times);
+	freeaddrinfo(hostinfo);
+	close(poller);
+	close(sk);
 }

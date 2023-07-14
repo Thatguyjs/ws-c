@@ -21,3 +21,5 @@ int set_nodelay(int fd, bool active);
 int count_digits(int value);
 
 uint64_t get_time_ms();
+
+int rfind_char(const char* str, char ch, size_t length);
