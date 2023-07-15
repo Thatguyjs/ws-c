@@ -120,5 +120,6 @@ bool http_handle_request(int client) {
 
 	http_free_request(&request);
 	http_free_response(&response);
+	free(buf);
 	return false;
 }

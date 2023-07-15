@@ -25,7 +25,7 @@ void http_free_response(http_res* res) {
 void http_set_status(http_res* res, int status) {
 	const char* status_msg = http_status_msg(status);
 	size_t msg_length = strlen(status_msg);
-	char* status_line = malloc(res->status_line.length);
+	char* status_line = malloc(msg_length + 15);
 
 	// Version
 	memcpy(status_line, "HTTP/1.1 ", 9);

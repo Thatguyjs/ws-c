@@ -149,6 +149,8 @@ int main() {
 					perror("epoll_ctl");
 					exit(1);
 				}
+
+				// TODO: Stop listening for connections if the limit has been reached
 			}
 
 			// Client sent data
