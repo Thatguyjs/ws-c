@@ -1,8 +1,6 @@
 #include "http.h"
 #include "request.h"
 
-#include <stdint.h>
-
 
 int http_parse_method(const slice* m, http_method* method) {
 	if(slice_eq_data(m, "GET", true))
@@ -85,7 +83,7 @@ http_req http_parse_request(const char* str, size_t length) {
 }
 
 
-void http_free_request(http_req *request) {
+void http_free_request(http_req* request) {
 	if(request->path.path != NULL)
 		fp_free(&request->path);
 }

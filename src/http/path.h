@@ -21,4 +21,4 @@ void fp_free(f_path* fp);
 void fp_lpush(f_path* fp, const char* part, size_t length); // Prepend data to a path (push from the left)
 void fp_push(f_path* fp, const char* part, size_t length); // Append data to a path
 
-slice fp_file_name(f_path* fp);
+slice fp_file_name(const f_path* fp);

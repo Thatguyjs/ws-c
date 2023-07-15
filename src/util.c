@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -12,6 +12,19 @@ char upper(char ch) {
 	if(ch >= 'a' && ch <= 'z')
 		return ch + 'A' - 'a';
 	return ch;
+}
+
+char* int_to_str(int n) {
+	int length = count_digits(n);
+	char* buf = malloc(length + 1);
+
+	for(int i = length; i > 0; i--) {
+		buf[i - 1] = n % 10 + '0';
+		n /= 10;
+	}
+
+	buf[length] = 0;
+	return buf;
 }
 
 
@@ -114,7 +127,7 @@ uint64_t get_time_ms() {
 size_t rfind_char(const char* str, char ch, size_t length) {
 	for(size_t i = length; i > 0; i--)
 		if(str[i - 1] == ch)
-			return i;
+			return i - 1;
 
 	return SIZE_MAX;
 }

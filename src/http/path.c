@@ -19,7 +19,6 @@ void fp_expand(f_path* fp, size_t min_capacity) {
 
 	fp->path = realloc(fp->path, new_cap);
 	fp->capacity = new_cap - 1; // Leave room for null byte
-	fp->path[fp->capacity] = 0;
 }
 
 void fp_free(f_path* fp) {
@@ -69,7 +68,7 @@ void fp_push(f_path* fp, const char* part, size_t length) {
 }
 
 
-slice fp_file_name(f_path* fp) {
+slice fp_file_name(const f_path* fp) {
 	slice sl = { fp->length, fp->path };
 
 	for(size_t i = fp->length; i > 0; i--) {

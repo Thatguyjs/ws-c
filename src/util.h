@@ -8,6 +8,7 @@
 
 
 char upper(char ch);
+char* int_to_str(int n);
 
 typedef struct {
 	size_t length;

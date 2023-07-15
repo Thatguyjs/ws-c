@@ -93,8 +93,6 @@ int main() {
 		exit(1);
 	}
 
-	// TODO: Use sigset_t and epoll_pwait() to handle signals as well
-
 	// Handle Ctrl-C signal (SIGINT)
 	struct sigaction sa = { .sa_handler = quit_handle };
 	sigaction(SIGINT, &sa, NULL);
