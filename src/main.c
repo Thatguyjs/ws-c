@@ -1,3 +1,4 @@
+#include "config/config.h"
 #include "http/http.h"
 #include "priority.h"
 
@@ -18,7 +19,12 @@ void quit_handle(int signo) {
 }
 
 
-int main() {
+int main(int argc, const char** argv) {
+	config cfg = cfg_create();
+	cfg_parse_argv(&cfg, argc, argv);
+
+	// TODO: Finish config parsing & use the 'config' struct
+
 	int status;
 	struct addrinfo hints;
 	struct addrinfo* hostinfo;

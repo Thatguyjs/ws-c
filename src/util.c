@@ -114,7 +114,7 @@ int count_digits(int value) {
 }
 
 
-uint64_t get_time_ms() {
+uint64_t get_time_ms(void) {
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
 

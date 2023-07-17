@@ -1,7 +1,9 @@
 #!/usr/bin/bash
 
-gcc -Werror -x c -Og -o ./build/ws-dbg ./src/*.c ./src/*/*.c
+[ ! -d ./build ] && mkdir ./build
+
+gcc -Werror -x c -ggdb3 -o ./build/ws-dbg ./src/*.c ./src/*/*.c
 
 echo "-- Build Succeeded --"
-valgrind --track-origins=yes --leak-check=full -s ./build/ws-dbg
+valgrind --track-origins=yes --leak-check=full -s ./build/ws-dbg "$@"
 echo "-- Program Ended --"
