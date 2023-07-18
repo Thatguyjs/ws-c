@@ -27,14 +27,34 @@ char* int_to_str(int n) {
 	return buf;
 }
 
+int str_to_int(const char* str, size_t length) {
+	int result = 0;
+	int place = 1;
+	bool neg = false;
+
+	if(length > 0 && str[0] == '-')
+		neg = true;
+
+	for(size_t i = length; i > neg; i--) {
+		if(str[i - 1] < '0' || str[i - 1] > '9')
+			return 0;
+
+		result += (str[i - 1] - '0') * place;
+		place *= 10;
+	}
+
+	if(neg) result = -result;
+	return result;
+}
+
 
 slice slice_new(size_t length, const char* data) {
 	slice sl = { length, data };
 	return sl;
 }
 
-slice slice_from_data(const char* data) {
-	return slice_new(strlen(data), data);
+slice slice_from_str(const char* str) {
+	return slice_new(strlen(str), str);
 }
 
 slice slice_until_ch(const slice* data, char ch) {
@@ -76,12 +96,12 @@ bool slice_advance(slice* sl, size_t offset) {
 	return true;
 }
 
-bool slice_eq_data(const slice* sl, const char* data, bool case_ins) {
+bool slice_eq_str(const slice* sl, const char* str, bool case_ins) {
 	for(size_t i = 0; i < sl->length; i++) {
 		char s_ch = upper(sl->data[i]);
-		char d_ch = upper(data[i]);
+		char d_ch = upper(str[i]);
 
-		if(data[i] == '\0' || s_ch != d_ch)
+		if(str[i] == '\0' || s_ch != d_ch)
 			return false;
 	}
 

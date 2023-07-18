@@ -23,8 +23,6 @@ int main(int argc, const char** argv) {
 	config cfg = cfg_create();
 	cfg_parse_argv(&cfg, argc, argv);
 
-	// TODO: Finish config parsing & use the 'config' struct
-
 	int status;
 	struct addrinfo hints;
 	struct addrinfo* hostinfo;
@@ -33,7 +31,7 @@ int main(int argc, const char** argv) {
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if((status = getaddrinfo("localhost", "8080", &hints, &hostinfo))) {
+	if((status = getaddrinfo(cfg.host, cfg.port, &hints, &hostinfo))) {
 		printf("Error in getaddrinfo(): %s\n", gai_strerror(status));
 		exit(1);
 	}
@@ -146,7 +144,7 @@ int main(int argc, const char** argv) {
 				}
 
 				set_nonblocking(peer, true);
-				pq_insert(&client_times, 5, peer);
+				pq_insert(&client_times, cfg.keep_alive, peer);
 
 				ev.events = EPOLLIN;
 				ev.data.fd = peer;
@@ -162,11 +160,11 @@ int main(int argc, const char** argv) {
 			// Client sent data
 			else {
 				int peer = event_buf[n].data.fd;
-				int should_close = http_handle_request(peer);
+				int should_close = http_handle_request(peer, &cfg);
 
 				// Update priority queue
 				if(!should_close)
-					pq_update(&client_times, 5, peer);
+					pq_update(&client_times, cfg.keep_alive, peer);
 
 				// Closed connection
 				else {

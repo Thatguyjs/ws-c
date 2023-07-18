@@ -3,23 +3,23 @@
 
 
 int http_parse_method(const slice* m, http_method* method) {
-	if(slice_eq_data(m, "GET", true))
+	if(slice_eq_str(m, "GET", true))
 		*method = METHOD_GET;
-	else if(slice_eq_data(m, "HEAD", true))
+	else if(slice_eq_str(m, "HEAD", true))
 		*method = METHOD_HEAD;
-	else if(slice_eq_data(m, "POST", true))
+	else if(slice_eq_str(m, "POST", true))
 		*method = METHOD_POST;
-	else if(slice_eq_data(m, "PUT", true))
+	else if(slice_eq_str(m, "PUT", true))
 		*method = METHOD_PUT;
-	else if(slice_eq_data(m, "DELETE", true))
+	else if(slice_eq_str(m, "DELETE", true))
 		*method = METHOD_DELETE;
-	else if(slice_eq_data(m, "CONNECT", true))
+	else if(slice_eq_str(m, "CONNECT", true))
 		*method = METHOD_CONNECT;
-	else if(slice_eq_data(m, "OPTIONS", true))
+	else if(slice_eq_str(m, "OPTIONS", true))
 		*method = METHOD_OPTIONS;
-	else if(slice_eq_data(m, "TRACE", true))
+	else if(slice_eq_str(m, "TRACE", true))
 		*method = METHOD_TRACE;
-	else if(slice_eq_data(m, "PATCH", true))
+	else if(slice_eq_str(m, "PATCH", true))
 		*method = METHOD_PATCH;
 	else
 		return HTTP_INV_METHOD;
@@ -28,9 +28,9 @@ int http_parse_method(const slice* m, http_method* method) {
 }
 
 int http_parse_version(const slice* v, http_version* version) {
-	if(slice_eq_data(v, "HTTP/1.0", false))
+	if(slice_eq_str(v, "HTTP/1.0", false))
 		*version = HTTP1_0;
-	else if(slice_eq_data(v, "HTTP/1.1", false))
+	else if(slice_eq_str(v, "HTTP/1.1", false))
 		*version = HTTP1_1;
 	else
 		return HTTP_INV_VERSION;

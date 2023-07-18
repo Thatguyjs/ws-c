@@ -4,6 +4,7 @@
 
 #include "request.h"
 #include "response.h"
+#include "../config/config.h"
 #include "../util.h"
 
 #include <stdbool.h>
@@ -17,4 +18,4 @@ enum {
 
 const char* http_error_msg(int code);
 
-bool http_handle_request(int client);
+bool http_handle_request(int client, config* cfg);

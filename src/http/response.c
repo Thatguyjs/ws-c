@@ -121,22 +121,22 @@ const char* mime_from_path(const f_path* path) {
 
 	slice_advance(&ext, ext_offset + 1);
 
-	if(slice_eq_data(&ext, "htm", true) || slice_eq_data(&ext, "html", true))
+	if(slice_eq_str(&ext, "htm", true) || slice_eq_str(&ext, "html", true))
 		return "text/html";
-	else if(slice_eq_data(&ext, "css", true))
+	else if(slice_eq_str(&ext, "css", true))
 		return "text/css";
-	else if(slice_eq_data(&ext, "js", true))
+	else if(slice_eq_str(&ext, "js", true))
 		return "text/javascript";
-	else if(slice_eq_data(&ext, "mjs", true))
+	else if(slice_eq_str(&ext, "mjs", true))
 		return "application/javascript";
-	else if(slice_eq_data(&ext, "wasm", true))
+	else if(slice_eq_str(&ext, "wasm", true))
 		return "application/wasm";
 
-	else if(slice_eq_data(&ext, "png", true))
+	else if(slice_eq_str(&ext, "png", true))
 		return "image/png";
-	else if(slice_eq_data(&ext, "jpg", true) || slice_eq_data(&ext, "jpeg", true))
+	else if(slice_eq_str(&ext, "jpg", true) || slice_eq_str(&ext, "jpeg", true))
 		return "image/jpeg";
-	else if(slice_eq_data(&ext, "ico", true))
+	else if(slice_eq_str(&ext, "ico", true))
 		return "image/x-icon";
 
 	return NULL;

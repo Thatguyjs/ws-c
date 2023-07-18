@@ -14,11 +14,11 @@ f_path fp_from_slice(const slice* sl) {
 void fp_expand(f_path* fp, size_t min_capacity) {
 	if(min_capacity <= fp->capacity) return;
 
-	size_t new_cap = fp->capacity + 1;
+	size_t new_cap = fp->capacity;
 	while(new_cap < min_capacity) new_cap *= 2;
 
-	fp->path = realloc(fp->path, new_cap);
-	fp->capacity = new_cap - 1; // Leave room for null byte
+	fp->path = realloc(fp->path, new_cap + 1); // Leave room for null byte
+	fp->capacity = new_cap;
 }
 
 void fp_free(f_path* fp) {

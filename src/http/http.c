@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/sendfile.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -27,7 +28,7 @@ const char* http_error_msg(int code) {
 }
 
 
-bool http_handle_request(int client) {
+bool http_handle_request(int client, config* cfg) {
 	char* buf = calloc(1024, 1);
 	int length;
 
@@ -45,7 +46,7 @@ bool http_handle_request(int client) {
 
 		http_set_status(&response, 413);
 		http_set_header(&response, "Content-Length", "21");
-		http_set_body(&response, slice_from_data("413 Content Too Large"));
+		http_set_body(&response, slice_from_str("413 Content Too Large"));
 
 		http_send_response(&response);
 		free(buf);
@@ -59,11 +60,11 @@ bool http_handle_request(int client) {
 		return true;
 	}
 
-	fp_lpush(&request.path, "./tests/simple-site", 19);
+	fp_lpush(&request.path, cfg->directory.data, cfg->directory.length);
 	slice filename = fp_file_name(&request.path);
 
 	if(rfind_char(filename.data, '.', filename.length) == SIZE_MAX)
-		fp_push(&request.path, "index.html", 10);
+		fp_push(&request.path, cfg->index_file.data, cfg->index_file.length);
 
 	int file = open(request.path.path, O_RDONLY);
 	http_res response = http_create_response(client);
@@ -92,7 +93,7 @@ bool http_handle_request(int client) {
 
 	// Not Found
 	else if(errno == ENOENT) {
-		slice msg_404 = slice_from_data("404 Not Found");
+		slice msg_404 = slice_from_str("404 Not Found");
 		char* msg_len = int_to_str(msg_404.length);
 
 		http_set_status(&response, 404);
@@ -106,7 +107,7 @@ bool http_handle_request(int client) {
 
 	// Other Error
 	else {
-		slice msg_500 = slice_from_data("500 Internal Server Error");
+		slice msg_500 = slice_from_str("500 Internal Server Error");
 		char* msg_len = int_to_str(msg_500.length);
 
 		http_set_status(&response, 500);
