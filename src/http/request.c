@@ -41,7 +41,6 @@ int http_parse_version(const slice* v, http_version* version) {
 int http_parse_req_line(slice* data, http_method* method, f_path* path, http_version* version) {
 	int err = 0;
 	slice line = slice_line(data);
-	// TODO: Advance the data slice pointer
 	slice s_method = slice_until_ch(&line, ' ');
 
 	if(line.length == SIZE_MAX || s_method.length == SIZE_MAX)
