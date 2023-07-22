@@ -1,5 +1,6 @@
 #include "config.h"
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -26,22 +27,66 @@ const char* cfg_error_msg(int code) {
 }
 
 
+redirs rd_create(void) {
+	redirs rd = { 4, 0, calloc(4, sizeof(char*)), calloc(4, sizeof(char*)) };
+	return rd;
+}
+
+void rd_free(redirs* rd) {
+	if(rd->from != NULL) {
+		free(rd->from);
+		free(rd->to);
+	}
+}
+
+
+void rd_push(redirs* rd, const char* from, const char* to) {
+	if(rd->length == rd->capacity) {
+		rd->capacity *= 2;
+		rd->from = realloc(rd->from, rd->capacity * sizeof(char*));
+		rd->to = realloc(rd->to, rd->capacity * sizeof(char*));
+	}
+
+	rd->from[rd->length] = from;
+	rd->to[rd->length] = to;
+
+	rd->length++;
+}
+
+const char* rd_test(redirs* rd, f_path* path) {
+	for(size_t i = 0; i < rd->length; i++) {
+		slice sl_path = { path->length, path->path };
+
+		if(slice_eq_str(&sl_path, rd->from[i], false))
+			return rd->to[i];
+	}
+
+	return NULL;
+}
+
+
 config cfg_create(void) {
 	config cf = {
 		"localhost",
 		"8080",
 		slice_from_str("./src"),
 		slice_from_str("index.html"),
-		5
+		5,
+		rd_create()
 	};
 
 	return cf;
+}
+
+void cfg_free(config* cf) {
+	rd_free(&cf->redirects);
 }
 
 
 int cfg_parse_argv(config* cf, int argc, const char** argv) {
 	arg_list al = al_create(argc, argv);
 	al_next(&al); // Skip the program invocation
+	int err;
 
 	while(al_peek(&al)) {
 		slice value = slice_from_str(al_next(&al));
@@ -51,7 +96,6 @@ int cfg_parse_argv(config* cf, int argc, const char** argv) {
 			slice_advance(&value, 1);
 			if(value.length == 0) return CFG_INVALID_SHORT_ARG;
 
-			int err;
 			if((err = cfg_parse_short(cf, &value, &al)))
 				return err;
 		}
@@ -60,7 +104,6 @@ int cfg_parse_argv(config* cf, int argc, const char** argv) {
 			slice_advance(&value, 2);
 			if(value.length == 0) return CFG_INVALID_LONG_ARG;
 
-			int err;
 			if((err = cfg_parse_long(cf, &value, &al)))
 				return err;
 		}
@@ -74,6 +117,7 @@ int cfg_parse_argv(config* cf, int argc, const char** argv) {
 int cfg_parse_short(config* cf, slice* arg, arg_list* al) {
 	const char* val = al_next(al);
 
+	// TODO: Check if it's a valid arg first
 	if(!val)
 		return CFG_MISSING_ARG_VALUE;
 
@@ -98,6 +142,13 @@ int cfg_parse_short(config* cf, slice* arg, arg_list* al) {
 			cf->keep_alive = str_to_int(val, strlen(val));
 			break;
 
+		case 'r': {
+			const char* to = al_next(al);
+			if(!to) return CFG_MISSING_ARG_VALUE;
+
+			rd_push(&cf->redirects, val, to);
+		  } break;
+
 		default:
 			return CFG_UNKNOWN_SHORT_ARG;
 	}
@@ -108,6 +159,7 @@ int cfg_parse_short(config* cf, slice* arg, arg_list* al) {
 int cfg_parse_long(config* cf, slice* arg, arg_list* al) {
 	const char* val = al_next(al);
 
+	// TODO: Check if it's a valid arg first
 	if(!val)
 		return CFG_MISSING_ARG_VALUE;
 
@@ -115,14 +167,24 @@ int cfg_parse_long(config* cf, slice* arg, arg_list* al) {
 		cf->host = val;
 	else if(slice_eq_str(arg, "port", false))
 		cf->port = val;
-	else if(slice_eq_str(arg, "dir", false))
+	else if(slice_eq_str(arg, "directory", false))
 		cf->directory = slice_from_str(val);
 	else if(slice_eq_str(arg, "index", false))
 		cf->index_file = slice_from_str(val);
 	else if(slice_eq_str(arg, "keep-alive", false))
 		cf->keep_alive = str_to_int(val, strlen(val));
-	else
-		return CFG_UNKNOWN_LONG_ARG;
+	else if(slice_eq_str(arg, "redirect", false)) {
+		const char* to = al_next(al);
+		if(!to) return CFG_MISSING_ARG_VALUE;
 
+		rd_push(&cf->redirects, val, to);
+	}
+	else return CFG_UNKNOWN_LONG_ARG;
+
+	return 0;
+}
+
+
+int cf_parse_file(config* cf, const char* path) {
 	return 0;
 }

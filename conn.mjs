@@ -3,6 +3,7 @@
 import net from "node:net";
 
 
+/*
 const stats = {
 	requests: 0,
 	responses: 0,
@@ -58,9 +59,9 @@ function finish() {
 	console.log(`Completed in ${end - start} ms`);
 	console.log(stats);
 }
+*/
 
 
-/*
 const conn = net.connect(8080, "127.0.0.1", () => {
 	conn.write("GET / HTTP/1.1\r\nDummy-Header: dummyvalue\r\n\r\n");
 
@@ -84,4 +85,3 @@ const conn = net.connect(8080, "127.0.0.1", () => {
 		conn.write("GET / HTTP/1.1\r\nAnother-Header: anothervalue\r\n\r\n");
 	}, 5 * 1000);
 });
-*/

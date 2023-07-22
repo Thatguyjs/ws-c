@@ -105,6 +105,10 @@ bool slice_eq_str(const slice* sl, const char* str, bool case_ins) {
 			return false;
 	}
 
+	// String is longer, not equal
+	if(str[sl->length] != '\0')
+		return false;
+
 	return true;
 }
 

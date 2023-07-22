@@ -1,5 +1,6 @@
 #include "http.h"
 #include "request.h"
+#include <stdio.h>
 
 
 int http_parse_method(const slice* m, http_method* method) {

@@ -21,7 +21,13 @@ void quit_handle(int signo) {
 
 int main(int argc, const char** argv) {
 	config cfg = cfg_create();
-	cfg_parse_argv(&cfg, argc, argv);
+	int cfg_err = cfg_parse_argv(&cfg, argc, argv);
+
+	if(cfg_err) {
+		printf("Config Error: %s\n", cfg_error_msg(cfg_err));
+		cfg_free(&cfg);
+		return 1;
+	}
 
 	int status;
 	struct addrinfo hints;
@@ -197,4 +203,5 @@ int main(int argc, const char** argv) {
 	freeaddrinfo(hostinfo);
 	close(poller);
 	close(sk);
+	cfg_free(&cfg);
 }

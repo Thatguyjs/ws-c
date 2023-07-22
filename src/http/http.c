@@ -60,67 +60,82 @@ bool http_handle_request(int client, config* cfg) {
 		return true;
 	}
 
-	fp_lpush(&request.path, cfg->directory.data, cfg->directory.length);
-	slice filename = fp_file_name(&request.path);
+	// Send a redirect response if one is found
+	const char* redir;
 
-	if(rfind_char(filename.data, '.', filename.length) == SIZE_MAX)
-		fp_push(&request.path, cfg->index_file.data, cfg->index_file.length);
-
-	int file = open(request.path.path, O_RDONLY);
-	http_res response = http_create_response(client);
-
-	if(file != -1) {
-		struct stat file_stat;
-		fstat(file, &file_stat);
-
-		char* c_len = int_to_str(file_stat.st_size);
-		const char* mime = mime_from_path(&request.path);
-
-		http_set_status(&response, 200);
-		http_set_header(&response, "Content-Length", c_len);
-		if(mime != NULL)
-			http_set_header(&response, "Content-Type", mime);
-
-		// The response has no body yet, will send it below
+	if((redir = rd_test(&cfg->redirects, &request.path))) {
+		http_res response = http_create_response(client);
+		http_set_status(&response, 307);
+		http_set_header(&response, "Content-Length", "0");
+		http_set_header(&response, "Location", redir);
 		http_send_response(&response);
 
-		off_t offset = 0;
-		sendfile(client, file, &offset, file_stat.st_size);
-
-		free(c_len);
-		close(file);
+		http_free_response(&response);
 	}
-
-	// Not Found
-	else if(errno == ENOENT) {
-		slice msg_404 = slice_from_str("404 Not Found");
-		char* msg_len = int_to_str(msg_404.length);
-
-		http_set_status(&response, 404);
-		http_set_header(&response, "Content-Length", msg_len);
-		http_set_header(&response, "Content-Type", "text/plain");
-		http_set_body(&response, msg_404);
-
-		free(msg_len);
-		http_send_response(&response);
-	}
-
-	// Other Error
 	else {
-		slice msg_500 = slice_from_str("500 Internal Server Error");
-		char* msg_len = int_to_str(msg_500.length);
+		fp_lpush(&request.path, cfg->directory.data, cfg->directory.length);
+		slice filename = fp_file_name(&request.path);
 
-		http_set_status(&response, 500);
-		http_set_header(&response, "Content-Length", msg_len);
-		http_set_header(&response, "Content-Type", "text/plain");
-		http_set_body(&response, msg_500);
+		if(rfind_char(filename.data, '.', filename.length) == SIZE_MAX)
+			fp_push(&request.path, cfg->index_file.data, cfg->index_file.length);
 
-		free(msg_len);
-		http_send_response(&response);
+		int file = open(request.path.path, O_RDONLY);
+		http_res response = http_create_response(client);
+
+		if(file != -1) {
+			struct stat file_stat;
+			fstat(file, &file_stat);
+
+			char* c_len = int_to_str(file_stat.st_size);
+			const char* mime = mime_from_path(&request.path);
+
+			http_set_status(&response, 200);
+			http_set_header(&response, "Content-Length", c_len);
+			if(mime != NULL)
+				http_set_header(&response, "Content-Type", mime);
+
+			// The response has no body yet, will send it below
+			http_send_response(&response);
+
+			off_t offset = 0;
+			sendfile(client, file, &offset, file_stat.st_size);
+
+			free(c_len);
+			close(file);
+		}
+
+		// Not Found
+		else if(errno == ENOENT) {
+			slice msg_404 = slice_from_str("404 Not Found");
+			char* msg_len = int_to_str(msg_404.length);
+
+			http_set_status(&response, 404);
+			http_set_header(&response, "Content-Length", msg_len);
+			http_set_header(&response, "Content-Type", "text/plain");
+			http_set_body(&response, msg_404);
+
+			free(msg_len);
+			http_send_response(&response);
+		}
+
+		// Other Error
+		else {
+			slice msg_500 = slice_from_str("500 Internal Server Error");
+			char* msg_len = int_to_str(msg_500.length);
+
+			http_set_status(&response, 500);
+			http_set_header(&response, "Content-Length", msg_len);
+			http_set_header(&response, "Content-Type", "text/plain");
+			http_set_body(&response, msg_500);
+
+			free(msg_len);
+			http_send_response(&response);
+		}
+
+		http_free_response(&response);
 	}
 
 	http_free_request(&request);
-	http_free_response(&response);
 	free(buf);
 	return false;
 }

@@ -99,6 +99,9 @@ const char* http_status_msg(int status_code) {
 		case 200:
 			return "Ok";
 
+		case 307:
+			return "Temporary Redirect";
+
 		case 404:
 			return "Not Found";
 		case 413:

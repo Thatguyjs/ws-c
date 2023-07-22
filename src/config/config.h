@@ -3,7 +3,9 @@
 // Parse the server config
 
 #include "argv.h"
+#include "../http/path.h"
 #include "../util.h"
+#include <stddef.h>
 
 
 enum {
@@ -17,20 +19,37 @@ enum {
 
 
 typedef struct {
+	size_t capacity;
+	size_t length;
+	const char** from;
+	const char** to;
+} redirs;
+
+typedef struct {
 	const char* host;
 	const char* port;
 	slice directory;
 	slice index_file;
 	int keep_alive;
+	redirs redirects;
 } config;
 
 
 const char* cfg_error_msg(int code);
 
+
+redirs rd_create(void);
+void rd_free(redirs* rd);
+
+void rd_push(redirs* rd, const char* from, const char* to);
+const char* rd_test(redirs* rd, f_path* path); // Tests if any redirect matches the given path
+
+
 config cfg_create(void);
+void cfg_free(config* cf);
 
 int cfg_parse_argv(config* cf, int argc, const char** argv);
 int cfg_parse_short(config* cf, slice* arg, arg_list* al); // Parse a short argument (prefixed '-')
 int cfg_parse_long(config* cf, slice* arg, arg_list* al); // Parse a long argument (prefixed '--')
 
-// int cf_parse_file(config& cf, const char* path);
+int cf_parse_file(config* cf, const char* path);
