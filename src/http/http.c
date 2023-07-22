@@ -68,8 +68,8 @@ bool http_handle_request(int client, config* cfg) {
 		http_set_status(&response, 307);
 		http_set_header(&response, "Content-Length", "0");
 		http_set_header(&response, "Location", redir);
-		http_send_response(&response);
 
+		http_send_response(&response); // TODO: Close client connection on error
 		http_free_response(&response);
 	}
 	else {
@@ -95,10 +95,12 @@ bool http_handle_request(int client, config* cfg) {
 				http_set_header(&response, "Content-Type", mime);
 
 			// The response has no body yet, will send it below
-			http_send_response(&response);
+			int send_err = http_send_response(&response); // TODO: Close client connection on error
 
-			off_t offset = 0;
-			sendfile(client, file, &offset, file_stat.st_size);
+			if(!send_err) {
+				off_t offset = 0;
+				sendfile(client, file, &offset, file_stat.st_size);
+			}
 
 			free(c_len);
 			close(file);

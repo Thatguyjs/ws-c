@@ -106,6 +106,7 @@ int main(int argc, const char** argv) {
 	// Handle Ctrl-C signal (SIGINT)
 	struct sigaction sa = { .sa_handler = quit_handle };
 	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGPIPE, &sa, NULL);
 
 	sigset_t blocked;
 	sigemptyset(&blocked);

@@ -1,5 +1,6 @@
 #include "response.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -82,15 +83,21 @@ void http_set_body(http_res* res, slice body) {
 }
 
 
-void http_send_response(http_res* res) {
-	send(res->fd, res->status_line.data, res->status_line.length, 0);
-	send(res->fd, res->headers.data, res->headers.length, 0);
+int http_send_response(http_res* res) {
+	int orig_errno = errno;
+
+	send(res->fd, res->status_line.data, res->status_line.length, MSG_MORE);
+	send(res->fd, res->headers.data, res->headers.length, MSG_MORE);
 
 	if(!res->headers.length)
-		send(res->fd, "\r\n", 2, 0);
+		send(res->fd, "\r\n", 2, MSG_MORE);
 
-	send(res->fd, "\r\n", 2, 0);
-	send(res->fd, res->body.data, res->body.length, 0);
+	send(res->fd, "\r\n", 2, 0); // This could be the last data sent, so don't flag MSG_MORE
+
+	if(res->body.length)
+		send(res->fd, res->body.data, res->body.length, 0);
+
+	return orig_errno == errno ? 0 : errno; // Only return an error if errno changed within the function
 }
 
 

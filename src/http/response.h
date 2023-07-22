@@ -28,7 +28,7 @@ void http_set_status(http_res* res, int status);
 void http_set_header(http_res* res, const char* header, const char* value);
 void http_set_body(http_res* res, slice body);
 
-void http_send_response(http_res* res);
+int http_send_response(http_res* res);
 
 const char* http_status_msg(int status_code);
 const char* mime_from_path(const f_path* path);
