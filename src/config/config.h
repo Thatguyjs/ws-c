@@ -32,6 +32,7 @@ typedef struct {
 	slice index_file;
 	int keep_alive;
 	redirs redirects;
+	redirs routes;
 } config;
 
 

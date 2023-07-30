@@ -72,6 +72,7 @@ config cfg_create(void) {
 		slice_from_str("./src"),
 		slice_from_str("index.html"),
 		5,
+		rd_create(),
 		rd_create()
 	};
 
@@ -80,6 +81,7 @@ config cfg_create(void) {
 
 void cfg_free(config* cf) {
 	rd_free(&cf->redirects);
+	rd_free(&cf->routes);
 }
 
 
@@ -117,36 +119,44 @@ int cfg_parse_argv(config* cf, int argc, const char** argv) {
 int cfg_parse_short(config* cf, slice* arg, arg_list* al) {
 	const char* val = al_next(al);
 
-	// TODO: Check if it's a valid arg first
-	if(!val)
-		return CFG_MISSING_ARG_VALUE;
-
 	switch(arg->data[0]) {
 		case 'H':
+			if(!val) return CFG_MISSING_ARG_VALUE;
 			cf->host = val;
 			break;
 
 		case 'p':
+			if(!val) return CFG_MISSING_ARG_VALUE;
 			cf->port = val;
 			break;
 
 		case 'd':
+			if(!val) return CFG_MISSING_ARG_VALUE;
 			cf->directory = slice_from_str(val);
 			break;
 
 		case 'i':
+			if(!val) return CFG_MISSING_ARG_VALUE;
 			cf->index_file = slice_from_str(val);
 			break;
 
 		case 'k':
+			if(!val) return CFG_MISSING_ARG_VALUE;
 			cf->keep_alive = str_to_int(val, strlen(val));
 			break;
 
 		case 'r': {
 			const char* to = al_next(al);
-			if(!to) return CFG_MISSING_ARG_VALUE;
+			if(!val || !to) return CFG_MISSING_ARG_VALUE;
 
 			rd_push(&cf->redirects, val, to);
+		  } break;
+
+		case 'R': {
+			const char* to_path = al_next(al);
+			if(!val || !to_path) return CFG_MISSING_ARG_VALUE;
+
+			rd_push(&cf->routes, val, to_path);
 		  } break;
 
 		default:
@@ -159,25 +169,37 @@ int cfg_parse_short(config* cf, slice* arg, arg_list* al) {
 int cfg_parse_long(config* cf, slice* arg, arg_list* al) {
 	const char* val = al_next(al);
 
-	// TODO: Check if it's a valid arg first
-	if(!val)
-		return CFG_MISSING_ARG_VALUE;
-
-	if(slice_eq_str(arg, "host", false))
+	if(slice_eq_str(arg, "host", false)) {
+		if(!val) return CFG_MISSING_ARG_VALUE;
 		cf->host = val;
-	else if(slice_eq_str(arg, "port", false))
+	}
+	else if(slice_eq_str(arg, "port", false)) {
+		if(!val) return CFG_MISSING_ARG_VALUE;
 		cf->port = val;
-	else if(slice_eq_str(arg, "directory", false))
+	}
+	else if(slice_eq_str(arg, "directory", false)) {
+		if(!val) return CFG_MISSING_ARG_VALUE;
 		cf->directory = slice_from_str(val);
-	else if(slice_eq_str(arg, "index", false))
+	}
+	else if(slice_eq_str(arg, "index", false)) {
+		if(!val) return CFG_MISSING_ARG_VALUE;
 		cf->index_file = slice_from_str(val);
-	else if(slice_eq_str(arg, "keep-alive", false))
+	}
+	else if(slice_eq_str(arg, "keep-alive", false)) {
+		if(!val) return CFG_MISSING_ARG_VALUE;
 		cf->keep_alive = str_to_int(val, strlen(val));
+	}
 	else if(slice_eq_str(arg, "redirect", false)) {
 		const char* to = al_next(al);
-		if(!to) return CFG_MISSING_ARG_VALUE;
+		if(!val || !to) return CFG_MISSING_ARG_VALUE;
 
 		rd_push(&cf->redirects, val, to);
+	}
+	else if(slice_eq_str(arg, "route", false)) {
+		const char* to_path = al_next(al);
+		if(!val || !to_path) return CFG_MISSING_ARG_VALUE;
+
+		rd_push(&cf->routes, val, to_path);
 	}
 	else return CFG_UNKNOWN_LONG_ARG;
 
