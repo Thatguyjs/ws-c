@@ -74,6 +74,22 @@ bool http_handle_request(int client, config* cfg) {
 	}
 	else {
 		fp_lpush(&request.path, cfg->directory.data, cfg->directory.length);
+
+		// Reroute the response if one is found
+		const char* route;
+
+		if((route = rd_test_base(&cfg->routes, &request.path))) {
+			slice sl_route = slice_from_str(route);
+			f_path new_path = fp_from_slice(&sl_route);
+
+			slice filename = fp_file_name(&request.path);
+			fp_push(&new_path, filename.data, filename.length);
+
+			fp_free(&request.path);
+			request.path = new_path;
+		}
+
+		// Add a chosen filename to any non-file path (default: index.html)
 		slice filename = fp_file_name(&request.path);
 
 		if(rfind_char(filename.data, '.', filename.length) == SIZE_MAX)

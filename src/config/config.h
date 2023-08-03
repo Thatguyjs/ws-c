@@ -44,6 +44,7 @@ void rd_free(redirs* rd);
 
 void rd_push(redirs* rd, const char* from, const char* to);
 const char* rd_test(redirs* rd, f_path* path); // Tests if any redirect matches the given path
+const char* rd_test_base(redirs* rd, f_path* path); // Tests only the base path for matches (excludes filepath)
 
 
 config cfg_create(void);

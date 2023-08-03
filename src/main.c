@@ -73,7 +73,11 @@ int main(int argc, const char** argv) {
 	}
 
 	struct sockaddr_in* listen_addr = (struct sockaddr_in*) hostinfo->ai_addr;
-	printf("Listening at %s:%d\n", inet_ntoa(listen_addr->sin_addr), ntohs(listen_addr->sin_port));
+	printf("Hosting \x1b[2m%s\x1b[0m at \x1b[94mhttp://%s:%d\x1b[0m\n",
+			cfg.directory.data,
+			inet_ntoa(listen_addr->sin_addr),
+			ntohs(listen_addr->sin_port)
+		  );
 
 	int poller = epoll_create1(0);
 	struct epoll_event ev, event_buf[20];

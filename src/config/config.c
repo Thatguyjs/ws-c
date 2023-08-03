@@ -54,9 +54,28 @@ void rd_push(redirs* rd, const char* from, const char* to) {
 }
 
 const char* rd_test(redirs* rd, f_path* path) {
-	for(size_t i = 0; i < rd->length; i++) {
-		slice sl_path = { path->length, path->path };
+	slice sl_path = { path->length, path->path };
 
+	for(size_t i = 0; i < rd->length; i++) {
+		if(slice_eq_str(&sl_path, rd->from[i], false))
+			return rd->to[i];
+	}
+
+	return NULL;
+}
+
+const char* rd_test_base(redirs* rd, f_path* path) {
+	size_t name_ind = rfind_char(path->path, '.', path->length);
+
+	if(name_ind != SIZE_MAX)
+		name_ind = rfind_char(path->path, '/', name_ind);
+
+	slice sl_path = { path->length, path->path };
+
+	if(name_ind != SIZE_MAX)
+		sl_path.length = name_ind;
+
+	for(size_t i = 0; i < rd->length; i++) {
 		if(slice_eq_str(&sl_path, rd->from[i], false))
 			return rd->to[i];
 	}
